@@ -12,9 +12,8 @@ public:
 
   virtual size_t write(const void *buf, size_t nbyte) {
     if (base == nullptr) return 0;
-    //if (readonly) return 0;
+    if (readonly) return 0;
     if (ofs + nbyte > (unsigned)sz) nbyte = sz - ofs;
-   // Serial.printf("-:%d %d", nbyte, ofs);
     if (nbyte > 0) memcpy(base + ofs, buf, nbyte);
     ofs += nbyte;    
     return nbyte;
