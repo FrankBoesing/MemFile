@@ -28,12 +28,13 @@ SOFTWARE.
 #include <FS.h>
 
 #define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
-const char empty[] = "";
+static const char empty[] = "";
 
 class MemFile : public File
 {
 public:
-
+  //Buffer is not checked for null pointers etc. We have no assert(), and just returning 0 would be no good.
+  //So..just let the mcu crash if something is wrong.
   virtual size_t write(const void *buf, size_t nbyte) {
     if (base == nullptr) return 0;
     if (readonly) return 0;
@@ -43,7 +44,7 @@ public:
     return nbyte;
   }
   virtual int peek() {
-    return -1; // TODO...
+    return *(base + ofs);
   }
   virtual int available() {
     if (base == nullptr) return 0;
@@ -97,7 +98,6 @@ public:
   }
   virtual void rewindDirectory(void) {
   }
-
   using Print::write;
 private:
   friend class MemFS;
@@ -121,13 +121,13 @@ class MemFS : public FS
 public:
   MemFS() {
   }  
-  File open(const char *ptr, uint8_t mode = FILE_READ) {
-    size = 4096;
-    return File(new MemFile((char*)ptr, size, mode));
+  File open(const char *UNUSED(ptr), uint8_t UNUSED(mode)) {    
+    return File();
   }
   File open(char *ptr, size_t size, uint8_t mode = FILE_READ) {
     this->size = size;
-    return File(new MemFile(ptr, size, mode));
+    if (size > 0) return File(new MemFile(ptr, size, mode));
+    return File();
   }  
   bool exists(const char *UNUSED(filepath)) {
     return true;
