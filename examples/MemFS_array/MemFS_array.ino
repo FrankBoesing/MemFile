@@ -3,7 +3,7 @@
   This example code is in the public domain.
 */
 
-#include <MEMFILE.h>
+#include <MemFile.h>
 
 char testData[] = {'1', '2', '3', '4', '5', '6', '7', '8'};
 
