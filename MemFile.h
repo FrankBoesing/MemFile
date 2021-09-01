@@ -84,8 +84,14 @@ public:
     return sz;
   }
   virtual void close() {
-     base = nullptr;
+    base = nullptr;
+    sz = 0;
+    ofs = 0;
+    mode = 0;
   }
+  virtual bool isOpen() {
+    return base != nullptr;
+  }  
   virtual operator bool() {
     return base != nullptr;
   }
