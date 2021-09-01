@@ -25,10 +25,10 @@ SOFTWARE.
 #pragma once
 #if defined(__cplusplus)
 
-#include <Arduino.h>
 #include <FS.h>
 
-#define UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 
 
 class MemFile : public FileImpl
@@ -63,7 +63,7 @@ public:
     ofs += nbyte;
     return nbyte;
   }
-  virtual bool truncate(uint64_t UNUSED(size)) {
+  virtual bool truncate(uint64_t size) {
     return false;
   }
   virtual bool seek(uint64_t pos, int mode = SeekSet) {
@@ -101,7 +101,7 @@ public:
   virtual boolean isDirectory(void) {
     return false;
   }
-  virtual File openNextFile(uint8_t UNUSED(mode)) {
+  virtual File openNextFile(uint8_t mode) {
     return File();
   }
   virtual void rewindDirectory(void) {
@@ -128,7 +128,7 @@ class MemFS : public FS
 public:
   MemFS() {
   }  
-  File open(const char *UNUSED(ptr), uint8_t UNUSED(mode)) {    
+  File open(const char *ptr, uint8_t mode) {    
     return File();
   }
   File open(char *ptr, size_t size, uint8_t mode = FILE_READ) {
@@ -136,19 +136,19 @@ public:
     if (size > 0) return File(new MemFile(ptr, size, mode));
     return File();
   }  
-  bool exists(const char *UNUSED(filepath)) {
+  bool exists(const char *filepath) {
     return true;
   }
-  bool mkdir(const char *UNUSED(filepath)) {
+  bool mkdir(const char *filepath) {
     return false;
   }
-  bool rename(const char *UNUSED(oldfilepath), const char *UNUSED(newfilepath)) {
+  bool rename(const char *oldfilepath, const char *newfilepath) {
     return false;
   }
-  bool remove(const char *UNUSED(filepath)) {
+  bool remove(const char *filepath) {
     return false;
   }
-  bool rmdir(const char *UNUSED(filepath)) {
+  bool rmdir(const char *filepath) {
     return false;
   }
   uint64_t usedSize() {
@@ -161,5 +161,7 @@ public:
 protected:
   size_t size;
 };
+
+#pragma GCC diagnostic pop
 
 #endif
