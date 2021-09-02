@@ -8,7 +8,7 @@ You could malloc() an area and use it as file.
 It can access the whole Teensy adress space (where allowed).
 
 ```
-#include "MemFIle.h" 
+#include "MemFile.h" 
 
 MemFS myfs;
 File dataFile;
