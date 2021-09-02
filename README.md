@@ -8,10 +8,11 @@ This can be an array in RAM, a memory area in PSRAM, or even a "PROGMEM const ar
 #include "MemFIle.h" 
 
 MemFS myfs;
+File dataFile;
 char testData[512] = {}; 
 
 void setup() { 
-File dataFile = myfs.open(&testData, sizeof(testData), FILE_WRITE);
+  dataFile = myfs.open(&testData, sizeof(testData), FILE_WRITE);
 
 ... 
 ```
