@@ -2,7 +2,7 @@
 A minimal file system in the "Teensy" address space. It allows to access arbitrary memory areas as a file.
 
 This can be an array in RAM, a memory area in PSRAM, or even a "PROGMEM const array" in the program flash.
-
+You could malloc() an area and use it as file.
 
 ```
 #include "MemFIle.h" 
