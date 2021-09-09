@@ -6,6 +6,7 @@ This can be an array in RAM, a memory area in PSRAM, or even a "PROGMEM const ar
 You could malloc() an area and use it as file.
 
 It can access the whole Teensy adress space (where allowed).
+Internally it uses just a pointer.There are no address checks. Forbidden addresses cause a crash - the normal behavior as with other pointers. It also does not write to the Flash.
 
 ```
 #include "MemFile.h" 
