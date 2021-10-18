@@ -49,10 +49,11 @@ public:
     if (mode == FILE_READ) return 0;
     if (ofs + nbyte > (unsigned)sz) nbyte = sz - ofs;
     if (nbyte > 0) memcpy(base + ofs, buf, nbyte);
-    ofs += nbyte;    
+    ofs += nbyte;
     return nbyte;
   }
   virtual int peek() { //""Returns the next character"
+    if (base == nullptr) return 0;
     int p = ofs + 1;
     if (p > sz) return -1;
     return *(base + p);
@@ -64,8 +65,28 @@ public:
     return s;
   }
   virtual void flush() {
+
+  #if defined(__IMXRT1062__)
+  if ( base == nullptr) return;
+  if ( mode == FILE_READ) return;
+  if ( ((intptr_t) base < 0x20000000) || ((intptr_t) base + sz > 0x20000000 + 512 * 1024))
+    return;
+  //like arm_dcache_flush(), but improved
+  uintptr_t location = (31 + (uintptr_t) base) & 0xFFFFFFE0;
+  uintptr_t end_addr = ((uintptr_t) base + sz) & 0xFFFFFFE0;
+	asm volatile("": : :"memory");
+	asm("dsb");
+	while (location < end_addr) {
+		SCB_CACHE_DCCMVAC = location;
+		location += 32;
+	};
+	asm("dsb");
+	asm("isb");
+  #endif
+
   }
   virtual size_t read(void *buf, size_t nbyte) {
+    if (base == nullptr) return 0;
     if (ofs + nbyte > (unsigned)sz) nbyte = sz - ofs;
     if (nbyte > 0) memcpy(buf, base + ofs, nbyte);
     ofs += nbyte;
@@ -76,7 +97,7 @@ public:
   }
   virtual bool seek(uint64_t pos, int mode = SeekSet) {
     if (base == nullptr) return false;
-    int p = pos;    
+    int p = pos;
     if (mode == SeekCur) p = ofs + pos;
     else if (mode == SeekEnd) p = ofs + sz - pos;
     if (p < 0 || p > sz) return false;
@@ -99,7 +120,7 @@ public:
   }
   virtual bool isOpen() {
     return base != nullptr;
-  }  
+  }
   virtual operator bool() {
     return base != nullptr;
   }
@@ -131,9 +152,9 @@ private:
   MemFile(char *p, size_t size, uint8_t _mode) {
     base = p;
     ofs = 0;
-    sz = size;    
+    sz = size;
     mode = _mode;
-  }  
+  }
   char *base = nullptr;
   int ofs;
   int sz;
@@ -147,18 +168,18 @@ class MemFS : public FS
 {
 public:
   MemFS() {
-  }  
-  File open(const char *ptr, uint8_t mode) {    
+  }
+  File open(const char *ptr, uint8_t mode) {
     return File(); // invalid
   }
   File open(char *ptr, size_t size, uint8_t mode = FILE_READ) {
     this->size = size;
     if (size > 0) return File(new MemFile(ptr, size, mode));
     return File();
-  }  
+  }
   File open(void *ptr, size_t size, uint8_t mode = FILE_READ) {
     return open( (char *)ptr, size, mode);
-  }    
+  }
   bool exists(const char *filepath) {
     return true;
   }
@@ -180,7 +201,7 @@ public:
   uint64_t totalSize() {
     return size;
   }
-  
+
 protected:
   size_t size;
 };

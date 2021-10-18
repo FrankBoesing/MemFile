@@ -30,5 +30,4 @@ For writes, think of it as a preallocated file.
 Any write will *not* make the file grow. You can it use to overwrite contents only.
 
 The normal api calls work (read(), write(), seek() etc)
-"flush()" exists for comptibility, but does nothing.
 
