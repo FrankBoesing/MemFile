@@ -156,6 +156,9 @@ public:
     if (size > 0) return File(new MemFile(ptr, size, mode));
     return File();
   }  
+  File open(void *ptr, size_t size, uint8_t mode = FILE_READ) {
+    return open( (char *)ptr, size, mode);
+  }    
   bool exists(const char *filepath) {
     return true;
   }
