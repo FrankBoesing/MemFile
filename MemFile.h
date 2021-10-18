@@ -114,6 +114,18 @@ public:
   }
   virtual void rewindDirectory(void) {
   }
+ 	bool getCreateTime(DateTimeFields &tm) {
+		return false;
+	}
+	bool getModifyTime(DateTimeFields &tm) {
+		return false;
+	}
+	bool setCreateTime(const DateTimeFields &tm) {
+		return false;
+	}
+	bool setModifyTime(const DateTimeFields &tm) {
+		return false;
+	}
 private:
   friend class MemFS;
   MemFile(char *p, size_t size, uint8_t _mode) {
@@ -137,7 +149,7 @@ public:
   MemFS() {
   }  
   File open(const char *ptr, uint8_t mode) {    
-    return File();
+    return File(); // invalid
   }
   File open(char *ptr, size_t size, uint8_t mode = FILE_READ) {
     this->size = size;
