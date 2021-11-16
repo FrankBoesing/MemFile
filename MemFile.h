@@ -39,6 +39,8 @@ Copyright (c) 2021 Frank Bösing
 #pragma GCC diagnostic ignored "-Wunused-variable"
 
 
+class MemFS;
+
 class MemFile : public FileImpl
 {
 public:
@@ -125,7 +127,7 @@ public:
     return base != nullptr;
   }
   virtual const char * name() {
-    return base != nullptr ? "" : nullptr;
+    return base != nullptr ? _name : nullptr;
   }
   virtual boolean isDirectory(void) {
     return false;
@@ -149,32 +151,127 @@ public:
 	}
 private:
   friend class MemFS;
-  MemFile(char *p, size_t size, uint8_t _mode) {
+  MemFile(const char *name, char *p, size_t size, uint8_t _mode) {
     base = p;
     ofs = 0;
     sz = size;
     mode = _mode;
+    strncpy(_name, name, sizeof(_name));
+    _name[sizeof(_name)-1] = 0; // make sure null terminated. 
   }
   char *base = nullptr;
   int ofs;
   int sz;
   uint8_t mode;
+  char _name[32]; // not full length but good enough...
 };
 
+
+class MemRootDir : public FileImpl
+{
+public:
+  virtual size_t write(const void *buf, size_t nbyte) {
+    return 0;
+  }
+  virtual int peek() { //""Returns the next character"
+   return -1;
+  }
+  virtual int available() {
+    return 0;
+  }
+  virtual void flush() {
+  }
+
+  virtual size_t read(void *buf, size_t nbyte) {
+    return 0;
+  }
+  virtual bool truncate(uint64_t size) {
+    return false;
+  }
+  virtual bool seek(uint64_t pos, int mode = SeekSet) {
+    return false;
+  }
+  virtual uint64_t position() {
+    return 0;
+  }
+  virtual uint64_t size() {
+    return 0;
+  }
+  virtual void close() {
+  }
+  virtual bool isOpen() {
+    return _pmemfs != nullptr;
+  }
+  virtual operator bool() {
+    return _pmemfs != nullptr;
+  }
+  virtual const char * name() {
+    return _pmemfs != nullptr ? "/" : nullptr;
+  }
+  virtual boolean isDirectory(void) {
+    return true;
+  }
+  virtual File openNextFile(uint8_t mode);
+  virtual void rewindDirectory(void) {
+    _rewound = true;
+  }
+  bool getCreateTime(DateTimeFields &tm) {
+    return false;
+  }
+  bool getModifyTime(DateTimeFields &tm) {
+    return false;
+  }
+  bool setCreateTime(const DateTimeFields &tm) {
+    return false;
+  }
+  bool setModifyTime(const DateTimeFields &tm) {
+    return false;
+  }
+private:
+  friend class MemFS;
+  MemRootDir(MemFS *pmemfs) : _pmemfs(pmemfs) {
+  }
+
+  MemFS *_pmemfs;
+  bool _rewound = true;
+};
 
 
 
 class MemFS : public FS
 {
 public:
-  MemFS() {
+  MemFS(char *buffer=nullptr, size_t size=0) : _buffer(buffer), _size(size) {
   }
-  File open(const char *ptr, uint8_t mode) {
+
+  bool begin(char *buffer, size_t size) {
+    _buffer = buffer;
+    _size = size;
+    _memory_allocated = false;
+    return true;
+  }
+  bool begin(size_t size) {
+    #if defined(__IMXRT1062__)
+    char *buffer = (char*)extmem_malloc(size);
+    #else
+    char *buffer = (char*)malloc(size);
+    #endif 
+    if (buffer) return begin(buffer, size);
+    return false;
+  }
+
+  File open(const char *name, uint8_t mode) {
+    if (_buffer && _size) {
+      if (strcmp(name, "/") == 0) return File(new MemRootDir(this));
+      _file = File(new MemFile(name, _buffer, _size, mode));
+      _memory_allocated = true;
+      return _file;
+    }
     return File(); // invalid
   }
   File open(char *ptr, size_t size, uint8_t mode = FILE_READ) {
-    this->size = size;
-    if (size > 0) return File(new MemFile(ptr, size, mode));
+    _size = size;
+    if (size > 0) return File(new MemFile((const char *)F("mem"),ptr, size, mode));
     return File();
   }
   File open(void *ptr, size_t size, uint8_t mode = FILE_READ) {
@@ -196,15 +293,29 @@ public:
     return false;
   }
   uint64_t usedSize() {
-    return size;
+    return _memory_allocated? _size : 0;
   }
   uint64_t totalSize() {
-    return size;
+    return _size;
   }
 
 protected:
-  size_t size;
+  friend class MemRootDir;
+  char *_buffer = nullptr;
+  bool _memory_allocated = true;
+  size_t _size;
+  File _file;
 };
+
+// some method implementations have to come after all of the defines
+File MemRootDir::openNextFile(uint8_t mode) {
+  if (_rewound && _pmemfs) {
+    _rewound = false; // only return once...
+    return _pmemfs->_file;
+  }
+  return File();
+}
+
 
 #pragma GCC diagnostic pop
 
